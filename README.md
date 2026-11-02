@@ -35,7 +35,7 @@ No package installation is required.
 Clone the repository:
 
 ```bash
-git clone https://github.com/akc251002iko/repo-health-cli.git
+git clone https://github.com/akc251002lko/repo-health-cli.git
 ```
 
 Enter the project directory:
