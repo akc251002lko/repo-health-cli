@@ -1,17 +1,39 @@
+
+# Python cache files
 __pycache__/
 *.py[cod]
 *$py.class
 
+# Python environments
 .Python
 venv/
 env/
 .venv/
+ENV/
 
+# Build and distribution
+build/
+dist/
+*.egg-info/
+
+# Testing and coverage
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 
+# Type checking
+.mypy_cache/
+.pyright/
+
+# IDE settings
 .idea/
 .vscode/
 
+# Operating system files
 .DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
