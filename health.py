@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 repo-health-cli
@@ -7,8 +6,10 @@ A zero-dependency GitHub repository health analyzer.
 
 import argparse
 import json
+import math
 import os
 import re
+import socket
 import sys
 import urllib.error
 import urllib.parse
@@ -62,12 +63,19 @@ class Colors:
 
 def use_color():
     """Determine whether terminal colors are supported."""
-    return sys.stdout.isatty() and "NO_COLOR" not in os.environ
+
+    return (
+        sys.stdout.isatty()
+        and "NO_COLOR" not in os.environ
+    )
 
 
 def paint(value, color):
+    """Apply terminal color when supported."""
+
     if use_color():
         return f"{color}{value}{Colors.RESET}"
+
     return str(value)
 
 
@@ -89,7 +97,9 @@ def validate_repo(repo):
         or name in (".", "..")
         or name.endswith(".git")
     ):
-        raise HealthCheckError("Invalid GitHub repository name.")
+        raise HealthCheckError(
+            "Invalid GitHub repository name."
+        )
 
     return owner, name
 
@@ -101,7 +111,7 @@ def github_get(url, timeout):
         url,
         headers={
             "Accept": "application/vnd.github+json",
-            "User-Agent": "repo-health-cli/1.0",
+            "User-Agent": "repo-health-cli/1.1",
             "X-GitHub-Api-Version": "2022-11-28",
         },
     )
@@ -111,9 +121,20 @@ def github_get(url, timeout):
             request,
             timeout=timeout,
         ) as response:
-            data = json.loads(
-                response.read().decode("utf-8")
-            )
+
+            raw_data = response.read()
+
+            try:
+                data = json.loads(
+                    raw_data.decode("utf-8")
+                )
+            except (
+                json.JSONDecodeError,
+                UnicodeDecodeError,
+            ):
+                raise HealthCheckError(
+                    "GitHub API returned invalid JSON."
+                )
 
             if not isinstance(data, dict):
                 raise HealthCheckError(
@@ -123,15 +144,28 @@ def github_get(url, timeout):
             return data
 
     except urllib.error.HTTPError as error:
+
         if error.code == 404:
             raise HealthCheckError(
                 "Repository not found or private. "
-                "Only publicly accessible repositories are supported."
+                "Only publicly accessible repositories "
+                "are supported."
             )
 
         if error.code == 403:
+            remaining = error.headers.get(
+                "X-RateLimit-Remaining"
+            )
+
+            if remaining == "0":
+                raise HealthCheckError(
+                    "GitHub API rate limit exceeded. "
+                    "Try again later."
+                )
+
             raise HealthCheckError(
-                "GitHub API rate limit exceeded or access forbidden."
+                "GitHub API rate limit exceeded or "
+                "access forbidden."
             )
 
         if error.code == 401:
@@ -149,18 +183,29 @@ def github_get(url, timeout):
         )
 
     except urllib.error.URLError as error:
+
+        if isinstance(
+            error.reason,
+            (TimeoutError, socket.timeout),
+        ):
+            raise HealthCheckError(
+                f"GitHub API request timed out "
+                f"after {timeout} seconds."
+            )
+
         raise HealthCheckError(
             f"Network error: {error.reason}"
         )
 
-    except (TimeoutError, OSError):
+    except (TimeoutError, socket.timeout):
         raise HealthCheckError(
-            "GitHub API request timed out or failed."
+            f"GitHub API request timed out "
+            f"after {timeout} seconds."
         )
 
-    except (json.JSONDecodeError, UnicodeDecodeError):
+    except OSError as error:
         raise HealthCheckError(
-            "GitHub API returned invalid JSON."
+            f"Network or system error: {error}"
         )
 
 
@@ -174,7 +219,10 @@ def fetch_repository_tree(owner, name, timeout):
         f"{API_BASE}/repos/{owner}/{name}"
     )
 
-    metadata = github_get(repository_url, timeout)
+    metadata = github_get(
+        repository_url,
+        timeout,
+    )
 
     branch = metadata.get("default_branch")
 
@@ -183,14 +231,20 @@ def fetch_repository_tree(owner, name, timeout):
             "Repository default branch could not be identified."
         )
 
-    encoded_branch = urllib.parse.quote(branch, safe="")
+    encoded_branch = urllib.parse.quote(
+        branch,
+        safe="",
+    )
 
     tree_url = (
         f"{API_BASE}/repos/{owner}/{name}"
         f"/git/trees/{encoded_branch}?recursive=1"
     )
 
-    tree_data = github_get(tree_url, timeout)
+    tree_data = github_get(
+        tree_url,
+        timeout,
+    )
 
     if tree_data.get("truncated"):
         raise HealthCheckError(
@@ -266,6 +320,8 @@ def progress_bar(score, width=30):
 
 
 def get_status(score):
+    """Return the health status and associated terminal color."""
+
     if score >= 80:
         return "Excellent", Colors.GREEN
 
@@ -306,7 +362,12 @@ def display_report(report):
 
     print()
     print(paint("=" * 58, Colors.CYAN))
-    print(paint("             REPOSITORY HEALTH REPORT", Colors.BOLD))
+    print(
+        paint(
+            "             REPOSITORY HEALTH REPORT",
+            Colors.BOLD,
+        )
+    )
     print(paint("=" * 58, Colors.CYAN))
 
     print(f"\n Repository : {report['repository']}")
@@ -355,13 +416,20 @@ def display_report(report):
             print(f"  - Add {path}")
 
     else:
-        print(paint("\n All checks passed!", Colors.GREEN))
+        print(
+            paint(
+                "\n All checks passed!",
+                Colors.GREEN,
+            )
+        )
 
     print("\n" + paint("=" * 58, Colors.CYAN))
     print()
 
 
 def main():
+    """Run the command-line application."""
+
     parser = argparse.ArgumentParser(
         prog="repo-health-cli",
         description=(
@@ -380,7 +448,10 @@ def main():
         "--timeout",
         type=float,
         default=DEFAULT_TIMEOUT,
-        help=f"API request timeout in seconds (default: {DEFAULT_TIMEOUT}).",
+        help=(
+            "API request timeout in seconds "
+            f"(default: {DEFAULT_TIMEOUT})."
+        ),
     )
 
     parser.add_argument(
@@ -391,8 +462,13 @@ def main():
 
     args = parser.parse_args()
 
-    if args.timeout <= 0:
-        parser.error("--timeout must be greater than zero.")
+    if (
+        not math.isfinite(args.timeout)
+        or args.timeout <= 0
+    ):
+        parser.error(
+            "--timeout must be a finite number greater than zero."
+        )
 
     try:
         owner, name = validate_repo(args.repo)
@@ -428,6 +504,7 @@ def main():
         return 0
 
     except HealthCheckError as error:
+
         if args.json:
             print(
                 json.dumps({"error": str(error)}),
@@ -435,14 +512,20 @@ def main():
             )
         else:
             print(
-                paint(f"\nError: {error}", Colors.RED),
+                paint(
+                    f"\nError: {error}",
+                    Colors.RED,
+                ),
                 file=sys.stderr,
             )
 
         return 1
 
     except KeyboardInterrupt:
-        print("\nOperation cancelled.", file=sys.stderr)
+        print(
+            "\nOperation cancelled.",
+            file=sys.stderr,
+        )
         return 130
 
 
