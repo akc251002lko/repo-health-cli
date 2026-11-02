@@ -1,7 +1,9 @@
 import io
 import json
+import socket
 import unittest
 import urllib.error
+from contextlib import redirect_stderr
 from unittest.mock import Mock, patch
 
 from health import (
@@ -224,7 +226,10 @@ class TestReport(unittest.TestCase):
         encoded = json.dumps(report)
         decoded = json.loads(encoded)
 
-        self.assertEqual(decoded["repository"], "psf/requests")
+        self.assertEqual(
+            decoded["repository"],
+            "psf/requests",
+        )
 
 
 class TestGitHubAPI(unittest.TestCase):
@@ -319,6 +324,29 @@ class TestGitHubAPI(unittest.TestCase):
             )
 
     @patch("health.urllib.request.urlopen")
+    def test_rate_limit_exceeded(self, mock_urlopen):
+        headers = {
+            "X-RateLimit-Remaining": "0"
+        }
+
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            "https://api.github.com/repos/owner/repo",
+            403,
+            "Forbidden",
+            headers,
+            None,
+        )
+
+        with self.assertRaisesRegex(
+            HealthCheckError,
+            "rate limit exceeded",
+        ):
+            github_get(
+                f"{API_BASE}/repos/owner/repo",
+                15,
+            )
+
+    @patch("health.urllib.request.urlopen")
     def test_http_401_error(self, mock_urlopen):
         mock_urlopen.side_effect = urllib.error.HTTPError(
             "https://api.github.com/repos/owner/repo",
@@ -365,6 +393,19 @@ class TestGitHubAPI(unittest.TestCase):
         with self.assertRaisesRegex(
             HealthCheckError,
             "Network error",
+        ):
+            github_get(
+                f"{API_BASE}/repos/owner/repo",
+                15,
+            )
+
+    @patch("health.urllib.request.urlopen")
+    def test_socket_timeout(self, mock_urlopen):
+        mock_urlopen.side_effect = socket.timeout()
+
+        with self.assertRaisesRegex(
+            HealthCheckError,
+            "timed out",
         ):
             github_get(
                 f"{API_BASE}/repos/owner/repo",
@@ -467,6 +508,48 @@ class TestCommandLine(unittest.TestCase):
         "0",
     ])
     def test_zero_timeout_is_rejected(self):
+        with self.assertRaises(SystemExit) as context:
+            main()
+
+        self.assertEqual(context.exception.code, 2)
+
+
+class TestTimeoutValidation(unittest.TestCase):
+
+    @patch("health.sys.argv", [
+        "health.py",
+        "--repo",
+        "psf/requests",
+        "--timeout",
+        "nan",
+    ])
+    def test_nan_timeout_is_rejected(self):
+        with self.assertRaises(SystemExit) as context:
+            main()
+
+        self.assertEqual(context.exception.code, 2)
+
+    @patch("health.sys.argv", [
+        "health.py",
+        "--repo",
+        "psf/requests",
+        "--timeout",
+        "inf",
+    ])
+    def test_infinite_timeout_is_rejected(self):
+        with self.assertRaises(SystemExit) as context:
+            main()
+
+        self.assertEqual(context.exception.code, 2)
+
+    @patch("health.sys.argv", [
+        "health.py",
+        "--repo",
+        "psf/requests",
+        "--timeout",
+        "-inf",
+    ])
+    def test_negative_infinity_timeout_is_rejected(self):
         with self.assertRaises(SystemExit) as context:
             main()
 
