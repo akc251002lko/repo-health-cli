@@ -233,6 +233,10 @@ Please review [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
 
 For community participation guidelines, see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
+## Community & Support
+
+For official project announcements, release and repository updates, technical discussions, questions, and collaboration, join the [Telegram community](https://t.me/githubakc251002lko).
+
 ## License
 
 This project is distributed under the MIT License.
@@ -244,7 +248,3 @@ See the [LICENSE](LICENSE) file for details.
 **Repo Health CLI**
 
 A simple structural health assessment tool for GitHub repositories.
-
-## Community
-
-For project announcements, repository updates, technical discussions, questions, and collaboration, visit the [official Telegram channel](https://t.me/githubakc251002lko).
