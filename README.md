@@ -1,12 +1,15 @@
 # Repo Health CLI
 
-A lightweight, zero-dependency Python command-line tool that evaluates public GitHub repositories against a predefined set of open-source repository best practices.
+A zero-dependency Python command-line auditor for GitHub repository quality, security configuration, workflow presence, and dependency-manifest visibility.
 
 Repo Health CLI analyzes repository structure, checks for essential project files and directories, calculates a health score, and generates human-readable or JSON reports.
 
 ## Features
 
-- Analyze publicly accessible GitHub repositories.
+- Analyze public repositories and private repositories when a suitable GITHUB_TOKEN is supplied.
+- Authenticate securely through the GITHUB_TOKEN environment variable when available.
+- Inventory SECURITY.md, Dependabot, CodeQL, and dependency-review configuration.
+- Discover common dependency manifests and GitHub Actions workflows.
 - Check essential documentation and configuration files.
 - Detect missing repository directories.
 - Calculate a weighted repository health score.
@@ -19,7 +22,7 @@ Repo Health CLI analyzes repository structure, checks for essential project file
 
 ## Requirements
 
-- Python 3.9 or newer.
+- Python 3.10 or newer.
 - Internet connection.
 - Access to the GitHub REST API.
 - A publicly accessible GitHub repository.
@@ -117,6 +120,12 @@ It evaluates:
 
 A directory is considered present when its directory entry or at least one descendant is detected.
 
+## Security and dependency inventory
+
+The JSON report includes a separate security-configuration inventory and dependency-manifest inventory. These are presence-based signals: the tool does not claim that a workflow is safe, that a policy is correctly configured, or that dependencies are vulnerability-free. Use dedicated code scanning and dependency scanning tools for those guarantees.
+
+Set GITHUB_TOKEN in the environment to analyze private repositories or benefit from authenticated API limits. Never commit tokens.
+
 ## Important Scoring Limitations
 
 The health score measures the presence of predefined repository files and directories.
@@ -189,7 +198,7 @@ python -m py_compile health.py tests/test_health.py
 
 The automated GitHub Actions workflow tests compatibility across:
 
-- Python 3.9
+- Python 3.10
 - Python 3.10
 - Python 3.11
 - Python 3.12
@@ -210,11 +219,7 @@ The application uses only Python's standard library and has no third-party runti
 
 ## API and Access
 
-The application currently supports publicly accessible repositories without requiring a personal access token.
-
-GitHub API rate limits may restrict repeated requests. If a rate limit is reached, wait before trying again.
-
-Private repository analysis and authenticated API access are not currently supported.
+Public repositories work without a token. Set GITHUB_TOKEN to authenticate requests and access repositories allowed by that token. The token is read from the environment and is never printed by the application.
 
 ## Contributing
 

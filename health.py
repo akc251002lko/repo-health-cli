@@ -6,6 +6,7 @@ A zero-dependency GitHub repository health analyzer.
 
 import argparse
 import json
+import logging
 import math
 import os
 import re
@@ -14,8 +15,10 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Any
 
 
+logger = logging.getLogger("repo_health_cli")
 API_BASE = "https://api.github.com"
 DEFAULT_TIMEOUT = 15
 
@@ -104,17 +107,20 @@ def validate_repo(repo):
     return owner, name
 
 
-def github_get(url, timeout):
-    """Perform a GitHub REST API GET request."""
+def github_get(url: str, timeout: float) -> dict[str, Any]:
+    """Perform an authenticated, rate-limit-aware GitHub REST GET."""
 
-    request = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "repo-health-cli/1.1",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-    )
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "repo-health-cli/2.0 (+https://github.com/akc251002lko/repo-health-cli)",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    request = urllib.request.Request(url, headers=headers)
+    logger.debug("GitHub API GET %s", url)
 
     try:
         with urllib.request.urlopen(
@@ -262,7 +268,7 @@ def fetch_repository_tree(owner, name, timeout):
     return metadata, tree
 
 
-def check_repository(tree):
+def check_repository(tree: list[dict[str, Any]]) -> tuple[int, list[dict[str, Any]]]:
     """Evaluate required files and calculate the health score."""
 
     available = {
@@ -302,6 +308,31 @@ def check_repository(tree):
     return score, results
 
 
+def analyze_repository_tree(tree: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarise security configuration and dependency manifests."""
+    paths = {
+        item.get("path", "")
+        for item in tree
+        if isinstance(item, dict) and isinstance(item.get("path"), str)
+    }
+    security_files = {
+        "SECURITY.md": "SECURITY.md" in paths,
+        "Dependabot configuration": ".github/dependabot.yml" in paths or ".github/dependabot.yaml" in paths,
+        "CodeQL workflow": any(path.startswith(".github/workflows/") and "codeql" in path.lower() for path in paths),
+        "Dependency review workflow": any(path.startswith(".github/workflows/") and "dependency-review" in path.lower() for path in paths),
+    }
+    manifest_names = {"pyproject.toml", "requirements.txt", "Pipfile", "poetry.lock", "package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "Cargo.toml", "Cargo.lock", "go.mod", "go.sum", "Gemfile", "Gemfile.lock", "pom.xml", "build.gradle", "composer.json", "composer.lock"}
+    manifests = sorted(path for path in paths if path.rsplit("/", 1)[-1] in manifest_names)
+    workflows = sorted(path for path in paths if path.startswith(".github/workflows/") and path.endswith((".yml", ".yaml")))
+    return {
+        "security_configuration": security_files,
+        "security_controls_present": sum(security_files.values()),
+        "security_controls_total": len(security_files),
+        "dependency_manifests": manifests,
+        "workflow_files": workflows,
+        "notes": ["Presence checks do not validate policy correctness or workflow safety.", "Dependency manifests are inventoried; vulnerability advisories are not queried."],
+    }
+
 def progress_bar(score, width=30):
     """Build a percentage-based progress bar."""
 
@@ -331,7 +362,7 @@ def get_status(score):
     return "Poor", Colors.RED
 
 
-def build_report(repo, metadata, score, results):
+def build_report(repo: str, metadata: dict[str, Any], score: int, results: list[dict[str, Any]]) -> dict[str, Any]:
     """Build a machine-readable report."""
 
     missing = [
@@ -427,9 +458,10 @@ def display_report(report):
     print()
 
 
-def main():
+def main() -> int:
     """Run the command-line application."""
 
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     parser = argparse.ArgumentParser(
         prog="repo-health-cli",
         description=(
@@ -495,6 +527,7 @@ def main():
             score,
             results,
         )
+        report.update(analyze_repository_tree(tree))
 
         if args.json:
             print(json.dumps(report, indent=2))
