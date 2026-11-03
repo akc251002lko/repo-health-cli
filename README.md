@@ -245,6 +245,6 @@ See the [LICENSE](LICENSE) file for details.
 
 A simple structural health assessment tool for GitHub repositories.
 
-## Community & Updates
+## Community
 
-Join the [Telegram community](https://t.me/githubakc251002lko) for the latest repository updates, project announcements, discussions, support, and more.
+For project announcements, repository updates, technical discussions, questions, and collaboration, visit the [official Telegram channel](https://t.me/githubakc251002lko).
