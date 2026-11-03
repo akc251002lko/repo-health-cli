@@ -244,3 +244,7 @@ See the [LICENSE](LICENSE) file for details.
 **Repo Health CLI**
 
 A simple structural health assessment tool for GitHub repositories.
+
+## Community & Updates
+
+Join the [Telegram community](https://t.me/githubakc251002lko) for the latest repository updates, project announcements, discussions, support, and more.
