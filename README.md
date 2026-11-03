@@ -22,7 +22,7 @@ Repo Health CLI analyzes repository structure, checks for essential project file
 
 ## Requirements
 
-- Python 3.9 or newer.
+- Python 3.10 or newer.
 - Internet connection.
 - Access to the GitHub REST API.
 - A publicly accessible GitHub repository.
@@ -198,7 +198,7 @@ python -m py_compile health.py tests/test_health.py
 
 The automated GitHub Actions workflow tests compatibility across:
 
-- Python 3.9
+- Python 3.10
 - Python 3.10
 - Python 3.11
 - Python 3.12
