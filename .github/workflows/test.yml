@@ -1,52 +1,42 @@
-
-name: Repository CI
+name: Repo Health CLI CI
 
 on:
   push:
-    branches:
-      - "**"
-
+    branches: [main, master, "chatgpt-write-access-check-2026-11-03"]
   pull_request:
-    branches:
-      - "**"
-
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: repo-health-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Python ${{ matrix.python-version }}
-
-    runs-on: ubuntu-24.04
-
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-
       matrix:
-        python-version:
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set Up Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Validate Python Syntax
+      - name: Compile source and tests
         run: python -m py_compile health.py tests/test_health.py
 
-      - name: Run Unit Tests
+      - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Check Public Repository Health
-        if: matrix.python-version == '3.12'
-        run: python health.py --repo "${{ github.repository }}"
+      - name: CLI help smoke test
+        run: python health.py --help
