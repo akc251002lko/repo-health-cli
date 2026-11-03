@@ -10,6 +10,7 @@ from health import (
     API_BASE,
     HealthCheckError,
     build_report,
+    analyze_repository_tree,
     check_repository,
     fetch_repository_tree,
     github_get,
@@ -558,3 +559,37 @@ class TestTimeoutValidation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestSecurityAndDependencyInventory(unittest.TestCase):
+
+    def test_detects_security_controls(self):
+        tree = [
+            {"path": "SECURITY.md", "type": "blob"},
+            {"path": ".github/dependabot.yml", "type": "blob"},
+            {"path": ".github/workflows/codeql.yml", "type": "blob"},
+            {"path": ".github/workflows/dependency-review.yml", "type": "blob"},
+        ]
+        report = analyze_repository_tree(tree)
+        self.assertEqual(report["security_controls_present"], 4)
+        self.assertEqual(report["security_controls_total"], 4)
+
+    def test_inventories_dependency_manifests_and_workflows(self):
+        tree = [
+            {"path": "requirements.txt", "type": "blob"},
+            {"path": "src/pyproject.toml", "type": "blob"},
+            {"path": ".github/workflows/test.yml", "type": "blob"},
+        ]
+        report = analyze_repository_tree(tree)
+        self.assertEqual(
+            report["dependency_manifests"],
+            ["requirements.txt", "src/pyproject.toml"],
+        )
+        self.assertEqual(
+            report["workflow_files"],
+            [".github/workflows/test.yml"],
+        )
+
+    def test_empty_tree_has_no_security_controls(self):
+        report = analyze_repository_tree([])
+        self.assertEqual(report["security_controls_present"], 0)
+        self.assertEqual(report["dependency_manifests"], [])
