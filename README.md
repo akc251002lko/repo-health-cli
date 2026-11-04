@@ -47,7 +47,7 @@ cd repo-health-cli
 
 No additional package installation is required.
 
-## How to Use
+## How To Use
 
 Analyze a repository:
 
