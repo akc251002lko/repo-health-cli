@@ -128,7 +128,7 @@ A directory is considered present when its directory entry or at least one desce
 
 The JSON report includes a separate security-configuration inventory and dependency-manifest inventory. These are presence-based signals: the tool does not claim that a workflow is safe, that a policy is correctly configured, or that dependencies are vulnerability-free. Use dedicated code scanning and dependency scanning tools for those guarantees.
 
-Set GITHUB_TOKEN in the environment to analyze private repositories or benefit from authenticated API limits. Never commit tokens.
+Set GITHUB_TOKEN in the environment to analyze private repositories or benefit from authenticated API limits. Never commit tokens. Review [SECURITY.md](SECURITY.md) for vulnerability reporting and credential-handling guidance.
 
 ## Important Scoring Limitations
 
