@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 from health import (
     API_BASE,
+    MAX_RESPONSE_BYTES,
     HealthCheckError,
     build_report,
     analyze_repository_tree,
@@ -255,6 +256,15 @@ class TestGitHubAPI(unittest.TestCase):
             result["full_name"],
             "psf/requests",
         )
+
+
+    @patch("health.urllib.request.urlopen")
+    def test_oversized_api_response_is_rejected(self, mock_urlopen):
+        response = Mock()
+        response.read.return_value = b"x" * (MAX_RESPONSE_BYTES + 1)
+        mock_urlopen.return_value.__enter__.return_value = response
+        with self.assertRaisesRegex(HealthCheckError, "25 MiB safety limit"):
+            github_get(f"{API_BASE}/repos/psf/requests", 15)
 
     @patch("health.urllib.request.urlopen")
     def test_invalid_json_response(self, mock_urlopen):
@@ -557,9 +567,6 @@ class TestTimeoutValidation(unittest.TestCase):
         self.assertEqual(context.exception.code, 2)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 class TestSecurityAndDependencyInventory(unittest.TestCase):
 
     def test_detects_security_controls(self):
@@ -593,3 +600,7 @@ class TestSecurityAndDependencyInventory(unittest.TestCase):
         report = analyze_repository_tree([])
         self.assertEqual(report["security_controls_present"], 0)
         self.assertEqual(report["dependency_manifests"], [])
+
+
+if __name__ == "__main__":
+    unittest.main()
