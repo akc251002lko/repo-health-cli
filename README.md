@@ -26,7 +26,7 @@ This repository provides a quick, repeatable structural audit of a GitHub reposi
 
 ## Requirements
 
-- Python 3.10 or newer.
+- Python 3.11 or newer.
 - Internet connection.
 - Access to the GitHub REST API.
 - A publicly accessible GitHub repository.
@@ -202,11 +202,10 @@ python -m py_compile health.py tests/test_health.py
 
 The automated GitHub Actions workflow tests compatibility across:
 
-- Python 3.10
-- Python 3.10
 - Python 3.11
 - Python 3.12
 - Python 3.13
+- Python 3.14
 
 API requests are mocked in the unit tests, so the test suite does not require live GitHub API access.
 
