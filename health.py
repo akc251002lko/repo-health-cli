@@ -153,9 +153,8 @@ def github_get(url: str, timeout: float) -> dict[str, Any]:
 
         if error.code == 404:
             raise HealthCheckError(
-                "Repository not found or private. "
-                "Only publicly accessible repositories "
-                "are supported."
+                "Repository not found or the supplied token lacks access. "
+                "Check the owner/name and repository permissions."
             )
 
         if error.code == 403:
