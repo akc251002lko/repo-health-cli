@@ -65,7 +65,7 @@ class Colors:
     RESET = "\033[0m"
 
 
-def use_color():
+def use_color() -> bool:
     """Determine whether terminal colors are supported."""
 
     return (
@@ -74,7 +74,7 @@ def use_color():
     )
 
 
-def paint(value, color):
+def paint(value: Any, color: str) -> str:
     """Apply terminal color when supported."""
 
     if use_color():
@@ -83,7 +83,7 @@ def paint(value, color):
     return str(value)
 
 
-def validate_repo(repo):
+def validate_repo(repo: str) -> tuple[str, str]:
     """Validate and split a GitHub owner/repository identifier."""
 
     if not isinstance(repo, str) or repo.count("/") != 1:
@@ -219,7 +219,7 @@ def github_get(url: str, timeout: float) -> dict[str, Any]:
         )
 
 
-def fetch_repository_tree(owner, name, timeout):
+def fetch_repository_tree(owner: str, name: str, timeout: float) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Fetch repository metadata and recursive file tree."""
 
     owner = urllib.parse.quote(owner, safe="")
@@ -337,7 +337,7 @@ def analyze_repository_tree(tree: list[dict[str, Any]]) -> dict[str, Any]:
         "notes": ["Presence checks do not validate policy correctness or workflow safety.", "Dependency manifests are inventoried; vulnerability advisories are not queried."],
     }
 
-def progress_bar(score, width=30):
+def progress_bar(score: int, width: int = 30) -> str:
     """Build a percentage-based progress bar."""
 
     filled = round(score * width / 100)
@@ -354,7 +354,7 @@ def progress_bar(score, width=30):
     return paint(bar, Colors.RED)
 
 
-def get_status(score):
+def get_status(score: int) -> tuple[str, str]:
     """Return the health status and associated terminal color."""
 
     if score >= 80:
@@ -389,7 +389,7 @@ def build_report(repo: str, metadata: dict[str, Any], score: int, results: list[
     }
 
 
-def display_report(report):
+def display_report(report: dict[str, Any]) -> None:
     """Print the human-readable terminal report."""
 
     score = report["health_score"]
