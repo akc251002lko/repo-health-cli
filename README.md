@@ -174,6 +174,9 @@ repo-health-cli/
 │   └── test_health.py
 │
 ├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.yml
+│   │   └── feature_request.yml
 │   └── workflows/
 │       └── test.yml
 │
@@ -181,6 +184,7 @@ repo-health-cli/
 ├── README.md
 ├── LICENSE
 ├── CONTRIBUTING.md
+├── SECURITY.md
 └── CODE_OF_CONDUCT.md
 ```
 
