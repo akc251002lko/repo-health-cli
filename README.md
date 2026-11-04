@@ -4,7 +4,7 @@ A zero-dependency Python command-line auditor for GitHub repository quality, sec
 
 Repo Health CLI analyzes repository structure, checks for essential project files and directories, calculates a health score, and generates human-readable or JSON reports.
 
-## What Is This Repository For?
+## What This Repository Is For
 
 This repository provides a quick, repeatable structural audit of a GitHub repository. Use it to check whether key documentation, governance, security-configuration, dependency-manifest, and workflow paths are present. Its score is a presence-based checklist, not a full security or code-quality assessment.
 
