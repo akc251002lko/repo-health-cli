@@ -29,7 +29,7 @@ This repository provides a quick, repeatable structural audit of a GitHub reposi
 - Python 3.11 or newer.
 - Internet connection.
 - Access to the GitHub REST API.
-- A publicly accessible GitHub repository.
+- A GitHub repository accessible to the caller; private repositories require a suitable `GITHUB_TOKEN`.
 
 ## Installation
 
