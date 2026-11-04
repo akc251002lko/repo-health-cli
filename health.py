@@ -21,6 +21,7 @@ from typing import Any
 logger = logging.getLogger("repo_health_cli")
 API_BASE = "https://api.github.com"
 DEFAULT_TIMEOUT = 15
+MAX_RESPONSE_BYTES = 25 * 1024 * 1024
 
 CHECKS = (
     ("README.md", "README.md", 20, "file"),
@@ -128,7 +129,11 @@ def github_get(url: str, timeout: float) -> dict[str, Any]:
             timeout=timeout,
         ) as response:
 
-            raw_data = response.read()
+            raw_data = response.read(MAX_RESPONSE_BYTES + 1)
+            if len(raw_data) > MAX_RESPONSE_BYTES:
+                raise HealthCheckError(
+                    "GitHub API response exceeded the 25 MiB safety limit."
+                )
 
             try:
                 data = json.loads(
@@ -464,7 +469,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         prog="repo-health-cli",
         description=(
-            "Evaluate public GitHub repositories "
+            "Evaluate GitHub repositories "
             "against open-source best practices."
         ),
     )
