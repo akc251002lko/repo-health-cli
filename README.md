@@ -247,3 +247,7 @@ See the [LICENSE](LICENSE) file for details.
 **Repo Health CLI**
 
 A simple structural health assessment tool for GitHub repositories.
+
+---
+
+**Maintained by [Arun Kumar](https://github.com/akc251002lko).**
